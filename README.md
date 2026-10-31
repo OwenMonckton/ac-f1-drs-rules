@@ -8,9 +8,11 @@ A Custom Shaders Patch (CSP) Lua app that enforces F1-style DRS rules in offline
 
 Verified in game on CSP 0.3.1 with the `fn_bahrain` (gp) track. See [`apps/lua/F1DRSRules/README.txt`](apps/lua/F1DRSRules/README.txt) for the full rules and settings.
 
-## Restore after reinstalling the game
+## Install
 
-Copy the `apps` folder from this repo into the Assetto Corsa folder and let it merge, so you end up with:
+Download `F1DRSRules-vX.Y.Z.zip` from the [latest release](https://github.com/OwenMonckton/ac-f1-drs-rules/releases/latest) and drag it into Content Manager.
+
+Or, by hand: copy the `apps` folder from this repo into the Assetto Corsa folder and let it merge, so you end up with:
 
 ```
 D:\SteamLibrary\steamapps\common\assettocorsa\apps\lua\F1DRSRules\
@@ -34,6 +36,13 @@ python tests/run.py
 ```
 
 `tests/make_beeps.py <folder>` regenerates the two `.wav` files.
+
+## Releasing a new version
+
+1. Bump `VERSION` in `apps/lua/F1DRSRules/manifest.ini` and commit.
+2. Push an annotated tag whose message is the release notes, e.g. `git tag -a v1.2.0 -m "What changed"` then `git push origin v1.2.0`.
+
+The `Release` GitHub Action builds the zip and publishes the release. It fails if the tag doesn't match the manifest version.
 
 ## History
 
