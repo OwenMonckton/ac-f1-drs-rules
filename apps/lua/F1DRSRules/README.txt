@@ -13,6 +13,12 @@ What it does (offline Race sessions, player + AI cars):
   - Practice / qualifying keep normal AC DRS unless "Race sessions only" is unticked.
   - Online races: does nothing.
 
+Beeps (your car only, toggle + volume + test buttons in the app window):
+  - drs_armed.wav (double beep): you crossed a detection point within the gap, DRS is yours
+    for the next zone.
+  - drs_open.wav (single higher beep): your DRS flap just opened (any session).
+  Replace either .wav with your own sound (same file name) to customise.
+
 How: physics.allowCarDRS() adds a lock on top of AC's own zone logic per car;
 ac.onTrackPointCrossed() timestamps each car at each detection point.
 

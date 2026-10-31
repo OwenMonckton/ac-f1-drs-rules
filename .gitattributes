@@ -1,4 +1,2 @@
-*.wav binary
-*.lua text eol=crlf
-*.ini text eol=crlf
-*.txt text eol=crlf
+# Store and restore files exactly as installed (no line-ending conversion)
+* -text

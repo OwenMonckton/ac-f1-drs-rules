@@ -26,6 +26,8 @@ local cfg = ac.storage{
   enableLap = 2,       -- first lap on which DRS can be used
   raceOnly = true,     -- only enforce in Race sessions
   messages = true,     -- on-screen message to the player at each detection point
+  beeps = true,        -- drs_armed.wav when DRS is earned at detection, drs_open.wav when the flap opens
+  beepVolume = 0.8,
 }
 
 local DETECTION_SETTLE_MS = 100  -- wait this long after a crossing before judging the gap, so every
@@ -42,6 +44,20 @@ local pending = {}        -- crossings waiting to be judged: { car, zone, time, 
 local verdict = {}        -- verdict[carIndex][zoneIndex] = { ok, gap, lap }
 local prevZone = {}       -- carIndex -> zone index the car was in last frame (or false)
 local applied = {}        -- carIndex -> last value passed to physics.allowCarDRS (true = disabled)
+
+local sounds = {}
+
+-- Non-looping file events become invalid after one play, so recreate each time (same as CSP's Mumble app)
+local function beep(name, force)
+  if not force and (not cfg.beeps or sim.isReplayActive) then return end
+  if sounds[name] then sounds[name]:dispose() end
+  local ok, e = pcall(ac.AudioEvent.fromFile, { filename = name .. '.wav', use3D = false, loop = false }, false)
+  if not ok or not e then ac.warn('F1 DRS Rules: cannot play ' .. name .. '.wav'); return end
+  e.cameraInteriorMultiplier, e.cameraExteriorMultiplier, e.cameraTrackMultiplier = 1, 1, 1
+  e.volume = cfg.beepVolume
+  e:resume()
+  sounds[name] = e
+end
 
 local function inRange(pos, s, e)
   if s <= e then return pos >= s and pos <= e end
@@ -112,6 +128,8 @@ local function judge(p)
   verdict[p.car] = verdict[p.car] or {}
   verdict[p.car][p.zone] = v
 
+  if v.ok and p.car == 0 then beep('drs_armed') end
+
   if cfg.messages and p.car == 0 then
     local where = zones[p.zone].wholeLap and 'start/finish line' or string.format('detection %d', p.zone)
     local gapText = gap < math.huge and string.format('%.2f s', gap) or 'no car ahead'
@@ -144,9 +162,15 @@ ac.onSessionStart(function ()
 end)
 
 local wasActive = false
+local playerDrsWasOpen = false
 
 function script.update(dt)
   if not physicsOk or sim.isReplayActive then return end
+
+  local player = ac.getCar(0)
+  local playerDrsOpen = player ~= nil and player.drsActive
+  if playerDrsOpen and not playerDrsWasOpen then beep('drs_open') end
+  playerDrsWasOpen = playerDrsOpen
 
   local active = rulesApply()
   if not active then
@@ -201,6 +225,14 @@ function windowMain(dt)
   if gChanged then cfg.gap = g end
   local l, lChanged = ui.slider('##lap', cfg.enableLap, 1, 5, 'DRS from lap %.0f', true)
   if lChanged then cfg.enableLap = l end
+  if ui.checkbox('Beeps (DRS earned / DRS opened)', cfg.beeps) then cfg.beeps = not cfg.beeps end
+  if cfg.beeps then
+    local vol, volChanged = ui.slider('##beepVolume', cfg.beepVolume * 100, 0, 150, 'Beep volume: %.0f%%')
+    if volChanged then cfg.beepVolume = vol / 100 end
+    if ui.button('Test earned') then beep('drs_armed', true) end
+    ui.sameLine()
+    if ui.button('Test opened') then beep('drs_open', true) end
+  end
 
   ui.separator()
   ui.textColored(zonesSource, colorDim)
